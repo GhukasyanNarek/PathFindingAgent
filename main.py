@@ -1,13 +1,35 @@
+import random
+import time
 import pygame
 from game import Game
 from algorithms import Strategy
 from openpyxl import Workbook, load_workbook
 
-# Constants
 WIDTH = 800
 WIN = pygame.display.set_mode((WIDTH, WIDTH))
 pygame.display.set_caption("Path Finding Agent")
 
+ROWS = 50
+OBSTACLE_DENSITY = 0.3
+
+
+def generate_random_points(rows):
+    start = (random.randint(0, rows - 1), random.randint(0, rows - 1))
+    end = (random.randint(0, rows - 1), random.randint(0, rows - 1))
+    while start == end:
+        end = (random.randint(0, rows - 1), random.randint(0, rows - 1))
+    return start, end
+
+
+def place_obstacles(grid, density):
+    total_cells = ROWS * ROWS
+    obstacle_count = int(total_cells * density)
+    obstacles = set()
+    while len(obstacles) < obstacle_count:
+        row, col = random.randint(0, ROWS - 1), random.randint(0, ROWS - 1)
+        if not grid[row][col].is_barrier():
+            obstacles.add((row, col))
+            grid[row][col].make_barrier()
 
 
 def save_metrics_to_xlsx(metrics, filename="data.xlsx"):
@@ -46,80 +68,36 @@ def save_metrics_to_xlsx(metrics, filename="data.xlsx"):
         print(f"An error occurred while saving to {filename}: {e}")
 
 
-# Main function without collecting data
-# def main(win, width, algorithm=Strategy.a_star):
-#     """
-#     Main function to run the pathfinding visualization.
-#
-#     Args:
-#         win (pygame.Surface): The pygame window surface to draw the grid and pathfinding.
-#         width (int): The width of the grid in pixels.
-#         algorithm (function): The pathfinding algorithm to use. Defaults to A* (Strategy.a_star).
-#
-#     Features:
-#         - Left mouse button: Place the start, end, or barrier nodes.
-#         - Right mouse button: Remove nodes.
-#         - Spacebar: Start the pathfinding algorithm.
-#         - 'C' key: Clear the grid.
-#     """
-#     ROWS = 50  # Number of rows and columns in the grid
-#     grid = Game.make_grid(ROWS, width)
-#
-#     # Initialize variables
-#     start = None  # Starting node
-#     end = None  # Ending node
-#     run = True  # Control the game loop
-#
-#     while run:
-#         Game.draw(win, grid, ROWS, width)  # Draw the grid
-#         for event in pygame.event.get():
-#             if event.type == pygame.QUIT:  # Handle quit event
-#                 run = False
-#
-#             if pygame.mouse.get_pressed()[0]:  # Left mouse button
-#                 pos = pygame.mouse.get_pos()
-#                 row, col = Game.get_clicked_pos(pos, ROWS, width)
-#                 spot = grid[row][col]
-#                 if not start and spot != end:  # Place start node
-#                     start = spot
-#                     start.make_start()
-#                 elif not end and spot != start:  # Place end node
-#                     end = spot
-#                     end.make_end()
-#                 elif spot != end and spot != start:  # Place barrier
-#                     spot.make_barrier()
-#
-#             elif pygame.mouse.get_pressed()[2]:  # Right mouse button
-#                 pos = pygame.mouse.get_pos()
-#                 row, col = Game.get_clicked_pos(pos, ROWS, width)
-#                 spot = grid[row][col]
-#                 spot.reset()  # Reset the spot
-#                 if spot == start:
-#                     start = None
-#                 elif spot == end:
-#                     end = None
-#
-#             if event.type == pygame.KEYDOWN:
-#                 if event.key == pygame.K_SPACE and start and end:
-#                     # Update neighbors for all spots
-#                     for row in grid:
-#                         for spot in row:
-#                             spot.update_neighbors(grid)
-#
-#                     # Run the selected pathfinding algorithm
-#                     algorithm(lambda: Game.draw(win, grid, ROWS, width), grid, start, end)
-#
-#                 if event.key == pygame.K_c:  # Clear the grid
-#                     start = None
-#                     end = None
-#                     grid = Game.make_grid(ROWS, width)
-#
-#     pygame.quit()
+def automated_tests(win, width, algorithm, num_tests=100):
+    for run_id in range(1, num_tests + 1):
+        print(f"Running test {run_id}...")
+
+        grid = Game.make_grid(ROWS, width)
+        start_pos, end_pos = generate_random_points(ROWS)
+
+        start = grid[start_pos[0]][start_pos[1]]
+        end = grid[end_pos[0]][end_pos[1]]
+        start.make_start()
+        end.make_end()
+
+        place_obstacles(grid, OBSTACLE_DENSITY)
+
+        for row in grid:
+            for spot in row:
+                spot.update_neighbors(grid)
+
+        metrics = algorithm(lambda: Game.draw(win, grid, ROWS, width), grid, start, end)
+        if metrics:
+            metrics["run"] = run_id
+            save_metrics_to_xlsx(metrics)
+        else:
+            print(f"Test {run_id}: No path found.")
+
+    print("All tests completed.")
+
 
 def main(win, width, algorithm=Strategy.a_star):
-    ROWS = 50
     grid = Game.make_grid(ROWS, width)
-
     start = None
     end = None
     run = True
@@ -129,24 +107,24 @@ def main(win, width, algorithm=Strategy.a_star):
             if event.type == pygame.QUIT:
                 run = False
 
-            if pygame.mouse.get_pressed()[0]:  # Left mouse button
+            if pygame.mouse.get_pressed()[0]:
                 pos = pygame.mouse.get_pos()
                 row, col = Game.get_clicked_pos(pos, ROWS, width)
                 spot = grid[row][col]
-                if not start and spot != end:  # Place start node
+                if not start and spot != end:
                     start = spot
                     start.make_start()
-                elif not end and spot != start:  # Place end node
+                elif not end and spot != start:
                     end = spot
                     end.make_end()
-                elif spot != end and spot != start:  # Place barrier
+                elif spot != end and spot != start:
                     spot.make_barrier()
 
-            elif pygame.mouse.get_pressed()[2]:  # Right mouse button
+            elif pygame.mouse.get_pressed()[2]:
                 pos = pygame.mouse.get_pos()
                 row, col = Game.get_clicked_pos(pos, ROWS, width)
                 spot = grid[row][col]
-                spot.reset()  # Reset the spot
+                spot.reset()
                 if spot == start:
                     start = None
                 elif spot == end:
@@ -154,22 +132,20 @@ def main(win, width, algorithm=Strategy.a_star):
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE and start and end:
-                    # Update neighbors for all spots
                     for row in grid:
                         for spot in row:
                             spot.update_neighbors(grid)
 
-                    # Run the algorithm and get metrics
                     metrics = algorithm(lambda: Game.draw(win, grid, ROWS, width), grid, start, end)
 
-                    if metrics:  # If a valid path is found
+                    if metrics:
                         print("Pathfinding Metrics:")
                         print(metrics)
                         save_metrics_to_xlsx(metrics, "data.xlsx")
                     else:
                         print("No path found!")
 
-                if event.key == pygame.K_c:  # Clear the grid
+                if event.key == pygame.K_c:
                     start = None
                     end = None
                     grid = Game.make_grid(ROWS, width)
@@ -178,4 +154,10 @@ def main(win, width, algorithm=Strategy.a_star):
 
 
 if __name__ == "__main__":
-    main(WIN, WIDTH, Strategy.a_star)
+    choice = input("Enter '1' for manual mode or '2' for automated tests: ").strip()
+    pygame.init()
+    if choice == "1":
+        main(WIN, WIDTH, Strategy.greedy_bfs)  # Use manual mode
+    elif choice == "2":
+        automated_tests(WIN, WIDTH, Strategy.greedy_bfs, num_tests=50)  # Use automated tests
+    pygame.quit()
