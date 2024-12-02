@@ -496,3 +496,79 @@ class Strategy:
                 current.make_closed()
 
         return None
+
+    def ucs(draw, grid, start, end):
+        """
+        Implements the Uniform Cost Search (UCS) algorithm with visualization and metrics collection.
+
+        Args:
+            draw (function): A function to update the drawing for visualization.
+            grid (list): The grid containing all the Spot objects.
+            start (Spot): The starting node.
+            end (Spot): The target node.
+
+        Returns:
+            dict: A dictionary containing pathfinding metrics, or None if no path is found.
+        """
+        import time
+        from queue import PriorityQueue
+
+        start_time = time.time()  # Start the timer
+
+        count = 0
+        open_set = PriorityQueue()
+        open_set.put((0, count, start))  # Cost, tie-breaker, start node
+        came_from = {}
+        cost_so_far = {spot: float("inf") for row in grid for spot in row}
+        cost_so_far[start] = 0
+        expanded_nodes = 0  # Counter for expanded nodes
+
+        while not open_set.empty():
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+
+            current_cost, _, current = open_set.get()  # Get the node with the lowest cost
+            expanded_nodes += 1
+
+            if current == end:  # Goal reached
+                end_time = time.time()  # Stop the timer
+                total_time = end_time - start_time
+
+                # Reconstruct the path
+                reconstruct_path(came_from, end, draw)
+
+                # Gather metrics
+                path = []
+                while current in came_from:
+                    path.append(current.get_pos())
+                    current = came_from[current]
+                path.append(start.get_pos())
+                path.reverse()
+
+                metrics = {
+                    "path": path,
+                    "time": total_time,
+                    "steps": len(path),
+                    "manhattan_distance": h(start.get_pos(), end.get_pos()),
+                    "expanded_nodes": expanded_nodes,
+                    "algorithm": "UCS"
+                }
+                return metrics
+
+            for neighbor in current.neighbors:
+                new_cost = cost_so_far[current] + 1  # Cost of moving to the neighbor
+                if new_cost < cost_so_far[neighbor]:  # Found a cheaper path
+                    cost_so_far[neighbor] = new_cost
+                    came_from[neighbor] = current
+                    count += 1
+                    open_set.put((new_cost, count, neighbor))  # Push with updated cost
+                    neighbor.make_open()
+
+            draw()
+
+            if current != start:
+                current.make_closed()
+
+        return None  # No path found
+
