@@ -96,6 +96,53 @@ def automated_tests(win, width, algorithm, num_tests=100):
     print("All tests completed.")
 
 
+def run_all_algorithms_for_configurations(win, width, num_tests=100):
+    """
+    Runs all algorithms on randomly generated grid configurations for a specified number of tests.
+    """
+    algorithms = ["a_star", "ucs", "bfs", "dfs", "greedy_bfs"]
+
+    for test_number in range(1, num_tests + 1):
+        print(f"Running test {test_number}...")
+
+        grid = Game.make_grid(ROWS, width)
+        start_pos, end_pos = generate_random_points(ROWS)
+
+        start = grid[start_pos[0]][start_pos[1]]
+        end = grid[end_pos[0]][end_pos[1]]
+        start.make_start()
+        end.make_end()
+
+        place_obstacles(grid, OBSTACLE_DENSITY)
+
+        for row in grid:
+            for spot in row:
+                spot.update_neighbors(grid)
+
+        for algo_name in algorithms:
+            try:
+                func = getattr(Strategy, algo_name)
+                print(f"Running {algo_name} on test {test_number}...")
+
+                start_time = time.time()
+                metrics = func(lambda: Game.draw(win, grid, ROWS, width), grid, start, end)
+                exec_time = time.time() - start_time
+
+                if metrics:
+                    metrics.update({
+                        "run": test_number,
+                        "algorithm": algo_name,
+                        "time": exec_time
+                    })
+                    save_metrics_to_xlsx(metrics)
+                else:
+                    print(f"Test {test_number}, Algorithm {algo_name}: No path found.")
+            except Exception as e:
+                print(f"Test {test_number}, Algorithm {algo_name}: Error occurred - {e}")
+
+    print("All tests completed.")
+
+
 def main(win, width, algorithm=Strategy.a_star):
     grid = Game.make_grid(ROWS, width)
     start = None
@@ -154,10 +201,13 @@ def main(win, width, algorithm=Strategy.a_star):
 
 
 if __name__ == "__main__":
-    choice = input("Enter '1' for manual mode or '2' for automated tests: ").strip()
+    choice = input("Enter '1' for manual mode or '2' for automated tests or '3' for automated tests that run on the same "
+                   "grid: ").strip()
     pygame.init()
     if choice == "1":
         main(WIN, WIDTH, Strategy.greedy_bfs)  # Use manual mode
     elif choice == "2":
         automated_tests(WIN, WIDTH, Strategy.greedy_bfs, num_tests=50)  # Use automated tests
+    elif choice == "3":
+        run_all_algorithms_for_configurations(WIN, WIDTH, num_tests=50)
     pygame.quit()
