@@ -100,7 +100,7 @@ def run_all_algorithms_for_configurations(win, width, num_tests=100):
     """
     Runs all algorithms on randomly generated grid configurations for a specified number of tests.
     """
-    algorithms = ["a_star", "ucs", "bfs", "dfs", "greedy_bfs"]
+    algorithms = ["a_star", "bfs", "dfs", "greedy_bfs"]
 
     for test_number in range(1, num_tests + 1):
         print(f"Running test {test_number}...")
@@ -201,13 +201,13 @@ def main(win, width, algorithm=Strategy.a_star):
 
 
 if __name__ == "__main__":
-    choice = input("Enter '1' for manual mode or '2' for automated tests or '3' for automated tests that run on the same "
-                   "grid: ").strip()
+    choice = input("Enter '1' for manual mode or '2' for automated tests or '3' for "
+                   "automated tests that run on the same grid: ").strip()
     pygame.init()
     if choice == "1":
-        main(WIN, WIDTH, Strategy.greedy_bfs)  # Use manual mode
+        main(WIN, WIDTH, Strategy.dfs)  # Use manual mode
     elif choice == "2":
-        automated_tests(WIN, WIDTH, Strategy.greedy_bfs, num_tests=50)  # Use automated tests
+        automated_tests(WIN, WIDTH, Strategy.greedy_bfs, num_tests=50)
     elif choice == "3":
         run_all_algorithms_for_configurations(WIN, WIDTH, num_tests=50)
     pygame.quit()
