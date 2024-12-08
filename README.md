@@ -145,6 +145,3 @@ Results are saved to `data.xlsx`. Here’s an example of how the metrics are log
 ### DEMONSTRATIONS
 
 ![393545508-ecb77920-00ed-4df0-b193-3c57f8c44b3d](https://github.com/user-attachments/assets/2ff52fd4-3ae8-4f2f-b5ea-dc699e4d2e64)
-
-![393545416-d3c80eaf-d3aa-4c48-8a36-6f5843834b82](https://github.com/user-attachments/assets/4a175243-2538-4536-956b-de2ca16fdf7f)
-
